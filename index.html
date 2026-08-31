@@ -188,9 +188,9 @@
             
             const [players, setPlayers] = useState(() => loadLocal('players', [
                 { id: 0, name: '나 (플레이어)', isAI: false, chips: INITIAL_CHIPS, cards: [], folded: false, bet: 0 },
-                { id: 1, name: '왼쪽 봇 1', isAI: true, style: 'tight', chips: INITIAL_CHIPS, cards: [], folded: false, bet: 0 },
-                { id: 2, name: '중간 봇 2', isAI: true, style: 'loose', chips: INITIAL_CHIPS, cards: [], folded: false, bet: 0 },
-                { id: 3, name: '오른쪽 봇 3', isAI: true, style: 'bluff', chips: INITIAL_CHIPS, cards: [], folded: false, bet: 0 },
+                { id: 1, name: '철수', isAI: true, style: 'tight', chips: INITIAL_CHIPS, cards: [], folded: false, bet: 0 },
+                { id: 2, name: '영희', isAI: true, style: 'loose', chips: INITIAL_CHIPS, cards: [], folded: false, bet: 0 },
+                { id: 3, name: '수현', isAI: true, style: 'bluff', chips: INITIAL_CHIPS, cards: [], folded: false, bet: 0 },
             ]));
             
             const [deck, setDeck] = useState([]);
@@ -238,9 +238,9 @@
                 localStorage.clear();
                 setPlayers([
                     { id: 0, name: '나 (플레이어)', isAI: false, chips: INITIAL_CHIPS, cards: [], folded: false, bet: 0 },
-                    { id: 1, name: '왼쪽 봇 1', isAI: true, style: 'tight', chips: INITIAL_CHIPS, cards: [], folded: false, bet: 0 },
-                    { id: 2, name: '중간 봇 2', isAI: true, style: 'loose', chips: INITIAL_CHIPS, cards: [], folded: false, bet: 0 },
-                    { id: 3, name: '오른쪽 봇 3', isAI: true, style: 'bluff', chips: INITIAL_CHIPS, cards: [], folded: false, bet: 0 },
+                    { id: 1, name: '철수', isAI: true, style: 'tight', chips: INITIAL_CHIPS, cards: [], folded: false, bet: 0 },
+                    { id: 2, name: '영희', isAI: true, style: 'loose', chips: INITIAL_CHIPS, cards: [], folded: false, bet: 0 },
+                    { id: 3, name: '수현', isAI: true, style: 'bluff', chips: INITIAL_CHIPS, cards: [], folded: false, bet: 0 },
                 ]);
                 setGameState('LOBBY');
                 setShowResetConfirm(false);
@@ -581,8 +581,7 @@
                 const isDoor = card.type === 'door';
 
                 return (
-                    <div className={`${scaleClass} animate-deal bg-white border-2 ${isHidden ? 'border-amber-500' : isDoor ? 'border-purple-500' : 'border-slate-300'} rounded-lg shadow-md flex flex-col justify-between p-1 ${isRed ? 'text-red-600' : 'text-slate-900'} font-bold relative`}>
-                        {isHidden && <span className="absolute -top-2 -right-1 bg-amber-600 text-white text-[7px] px-1 rounded-full">히든</span>}
+                    <div className={`${scaleClass} animate-deal bg-white border-2 ${isDoor ? 'border-purple-600' : 'border-slate-300'} rounded-lg shadow-md flex flex-col justify-between p-1 ${isRed ? 'text-red-600' : 'text-slate-900'} font-bold relative`}>
                         {isDoor && <span className="absolute -top-2 -right-1 bg-purple-600 text-white text-[7px] px-1 rounded-full">도어</span>}
                         <div className="flex justify-between items-center leading-none">
                             <span className="text-[10px] sm:text-xs">{card.value}</span>
@@ -643,7 +642,7 @@
                             );
                         })}
 
-                        {/* 상단 봇 (ID: 2) */}
+                        {/* 상단 봇 (영희) */}
                         {players[2] && (
                             <div className={`flex flex-col items-center p-1.5 rounded-2xl border transition-all duration-300 ${currentTurn === 2 ? 'active-turn-effect bg-slate-900' : 'border-slate-800 bg-slate-900/50'} w-full max-w-md mx-auto shrink-0`}>
                                 <div className="flex justify-between w-full text-xs mb-1 px-1">
@@ -662,7 +661,7 @@
 
                         {/* 중단 테이블 (좌우 봇 및 중앙 팟) */}
                         <div className="flex justify-between items-center w-full my-1 px-1 shrink-0">
-                            {/* 왼쪽 봇 (ID: 1) */}
+                            {/* 왼쪽 봇 (철수) */}
                             {players[1] && (
                                 <div className={`flex flex-col items-center p-1 rounded-2xl border transition-all duration-300 ${currentTurn === 1 ? 'active-turn-effect bg-slate-900' : 'border-slate-800 bg-slate-900/50'} w-[31%] max-w-[150px]`}>
                                     <div className="text-[9px] font-bold text-slate-200 truncate w-full text-center">{players[1].name}</div>
@@ -689,7 +688,7 @@
                                 </div>
                             </div>
 
-                            {/* 오른쪽 봇 (ID: 3) */}
+                            {/* 오른쪽 봇 (수현) */}
                             {players[3] && (
                                 <div className={`flex flex-col items-center p-1 rounded-2xl border transition-all duration-300 ${currentTurn === 3 ? 'active-turn-effect bg-slate-900' : 'border-slate-800 bg-slate-900/50'} w-[31%] max-w-[150px]`}>
                                     <div className="text-[9px] font-bold text-slate-200 truncate w-full text-center">{players[3].name}</div>
@@ -705,7 +704,7 @@
                             )}
                         </div>
 
-                        {/* 내 좌석 (ID: 0 - 하단) */}
+                        {/* 내 좌석 (하단) */}
                         {players[0] && (
                             <div className={`flex flex-col items-center p-2 rounded-2xl border transition-all duration-300 ${currentTurn === 0 ? 'active-turn-effect bg-slate-900' : 'border-slate-800 bg-slate-900/80'} w-full max-w-md mx-auto shrink-0`}>
                                 <div className="flex justify-between w-full text-xs mb-1 px-1">
@@ -751,7 +750,7 @@
                                             <div 
                                                 key={idx} 
                                                 onClick={() => handleSelectDoor(idx)}
-                                                className="cursor-pointer bg-white border-2 border-amber-500 rounded-xl p-1.5 text-slate-900 hover:scale-105 transition-transform w-11 h-15 sm:w-12 sm:h-16 flex flex-col justify-between font-bold text-xs shadow-xl shrink-0"
+                                                className="cursor-pointer bg-white border-2 border-purple-600 rounded-xl p-1.5 text-slate-900 hover:scale-105 transition-transform w-11 h-15 sm:w-12 sm:h-16 flex flex-col justify-between font-bold text-xs shadow-xl shrink-0"
                                             >
                                                 <div className="flex justify-between text-[10px]"><span>{card.value}</span><span>{card.suit}</span></div>
                                                 <div className="text-center text-sm">{card.suit}</div>
@@ -867,35 +866,43 @@
                         </div>
                     )}
 
-                    {/* 초보자 맞춤형 게임 설명 가이드 팝업 */}
+                    {/* 초보자 맞춤형 상세 게임 설명 가이드 팝업 */}
                     {showTutorial && (
                         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
                             <div className="bg-slate-900 border border-slate-700 max-w-lg w-full p-5 rounded-3xl shadow-2xl flex flex-col max-h-[85vh]">
-                                <h2 className="text-sm font-bold text-amber-400 mb-2">📖 초보자를 위한 포커게임 가이드</h2>
+                                <h2 className="text-sm font-bold text-amber-400 mb-2">📖 완전 초보를 위한 친절한 포커 가이드</h2>
                                 <div className="overflow-y-auto text-xs text-slate-300 space-y-3 pr-2 flex-1 leading-relaxed text-left">
                                     <div className="bg-slate-800/60 p-2.5 rounded-xl border border-slate-700">
-                                        <p className="font-bold text-amber-300 mb-1">1. 게임 진행 순서</p>
-                                        <p>• 카드를 처음 받을 때 <strong>공개할 도어카드 1장</strong>을 직접 선택합니다.</p>
-                                        <p>• 카드를 한 장씩 늘려가며 7스트리트까지 베팅을 진행합니다.</p>
+                                        <p className="font-bold text-amber-300 mb-1">1. 포커란 어떤 게임인가요?</p>
+                                        <p>• 철수, 영희, 수현이와 함께 카드를 모아 가장 좋은 조합(족보)을 만드는 사람이 판돈(팟)을 모두 가져가는 게임입니다.</p>
+                                        <p>• 게임이 시작되면 카드를 단계별(3스트리트 ➔ 7스트리트)로 나누어 받으며, 단계마다 내 카드가 유리한지 판단해 돈을 겁니다.</p>
                                     </div>
+                                    
                                     <div className="bg-slate-800/60 p-2.5 rounded-xl border border-slate-700">
-                                        <p className="font-bold text-amber-300 mb-1">2. 베팅 용어 설명</p>
-                                        <p>• <strong>폴드:</strong> 이번 판을 포기하고 카드를 버립니다. (돈을 더 잃지 않음)</p>
-                                        <p>• <strong>체크:</strong> 추가로 낼 돈이 없을 때, 돈을 내지 않고 순서를 넘깁니다.</p>
-                                        <p>• <strong>콜:</strong> 앞사람이 베팅한 금액만큼 똑같이 맞추어 돈을 냅니다.</p>
-                                        <p>• <strong>베팅/레이즈:</strong> 판돈을 키우기 위해 돈을 추가로 더 겁니다.</p>
+                                        <p className="font-bold text-amber-300 mb-1">2. 게임 진행 순서 및 도어카드란?</p>
+                                        <p>• <strong>도어카드 선택:</strong> 게임이 시작되면 내게 카드 3장이 주어집니다. 이 중 다른 사람들에게 보여줄 공개 카드를 고르게 되는데, 이것이 바로 **보라색 테두리로 표시되는 '도어카드'**입니다.</p>
+                                        <p>• <strong>스트리트 단계:</strong> 카드를 한 장씩 더 받아 총 7장의 카드를 갖게 될 때까지 베팅 라운드(스트리트)가 차례대로 진행됩니다.</p>
                                     </div>
+
                                     <div className="bg-slate-800/60 p-2.5 rounded-xl border border-slate-700">
-                                        <p className="font-bold text-amber-300 mb-1">3. 꿀팁 안내</p>
-                                        <p>• 현재 내 차례인 플레이어는 <strong>반짝반짝 빛나는 효과</strong>로 쉽게 알 수 있습니다.</p>
-                                        <p>• 칩을 모두 잃어 파산하더라도 <strong>[칩 빌리기]</strong> 버튼으로 언제든 다시 시작할 수 있습니다!</p>
+                                        <p className="font-bold text-amber-300 mb-1">3. 내 차례에 할 수 있는 행동 (버튼 설명)</p>
+                                        <p>• <strong>폴드:</strong> "이번 판은 내 카드가 너무 안 좋다" 싶을 때 포기하는 것입니다. 카드를 버리면 지금까지 낸 돈까지만 잃고 더 이상 피해를 보지 않습니다.</p>
+                                        <p>• <strong>체크:</strong> 추가로 돈을 낼 필요가 없을 때, 돈을 더 걸지 않고 다음 사람에게 순서를 넘깁니다.</p>
+                                        <p>• <strong>콜:</strong> 앞사람이 돈을 걸었을 때, 그 사람과 똑같은 금액을 맞춰서 내고 게임에 계속 참여합니다.</p>
+                                        <p>• <strong>베팅 / 레이즈:</strong> "내 카드가 아주 좋아!" 라며 판돈을 더 키우고 싶을 때 추가로 돈을 더 거는 행동입니다.</p>
+                                    </div>
+
+                                    <div className="bg-slate-800/60 p-2.5 rounded-xl border border-slate-700">
+                                        <p className="font-bold text-amber-300 mb-1">4. 초보자를 위한 화면 꿀팁</p>
+                                        <p>• 화면에서 누구 차례인지 헷갈린다면, <strong>테두리가 반짝반짝 빛나는 사람</strong>이 현재 차례인 사람입니다!</p>
+                                        <p>• 게임을 하다가 칩을 전부 잃어 파산하더라도, 언제든 <strong>[칩 빌리기]</strong> 버튼을 눌러 공짜로 칩을 충전하고 다시 즐길 수 있습니다.</p>
                                     </div>
                                 </div>
                                 <button 
                                     onClick={() => setShowTutorial(false)}
                                     className="mt-3 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs"
                                 >
-                                    확인했어요!
+                                    완벽히 이해했어요!
                                 </button>
                             </div>
                         </div>

@@ -594,7 +594,7 @@
 
             return (
                 <div className="flex flex-col w-screen h-screen overflow-hidden bg-slate-950 text-white font-sans">
-                    {/* 상단바 (초슬림화) */}
+                    {/* 상단바 */}
                     <header className="bg-slate-900 border-b border-slate-800 px-3 py-1.5 flex justify-between items-center shrink-0">
                         <div className="flex items-center gap-1.5">
                             <h1 className="text-xs font-black tracking-wider text-amber-400">♠ 포커</h1>
@@ -622,7 +622,7 @@
                         </div>
                     </header>
 
-                    {/* 메인 게임판 영역 (화면 전체에 꼭 맞춤) */}
+                    {/* 메인 게임판 영역 */}
                     <div className="flex-1 relative flex flex-col justify-between p-2 max-w-md mx-auto w-full overflow-hidden">
                         
                         {flyingChips.map(fc => {
@@ -655,7 +655,7 @@
                             </div>
                         )}
 
-                        {/* 중단 테이블 (좌우 봇 및 중앙 팟) */}
+                        {/* 중단 테이블 */}
                         <div className="flex justify-between items-center w-full my-0.5 px-0.5">
                             {/* 왼쪽 봇 (철수) */}
                             {players[1] && (
@@ -699,7 +699,7 @@
                             )}
                         </div>
 
-                        {/* 내 좌석 (하단) */}
+                        {/* 내 좌석 */}
                         {players[0] && (
                             <div className={`flex flex-col items-center p-2 rounded-lg border transition-all ${currentTurn === 0 ? 'active-turn-effect bg-slate-900' : 'border-slate-800 bg-slate-950/90'} w-full max-w-xs mx-auto shrink-0`}>
                                 <div className="flex justify-between w-full text-[10px] mb-1 px-1">
@@ -707,7 +707,6 @@
                                     <ChipStack amount={players[0].chips} hide={hideChips} />
                                 </div>
                                 
-                                {/* 내 카드 영역 */}
                                 <div className="flex gap-1.5 w-full justify-center min-h-[48px] items-center bg-slate-900/60 p-1 rounded border border-slate-800 overflow-x-auto">
                                     {players[0].cards.length > 0 ? (
                                         players[0].cards.map((c, i) => <div key={i}>{renderCard(c, i, "w-8 h-11 text-[10px]", false)}</div>)
@@ -725,7 +724,7 @@
 
                     </div>
 
-                    {/* 하단 컨트롤 패널 (컴팩트 수정) */}
+                    {/* 하단 컨트롤 패널 */}
                     <div className="bg-slate-900 border-t border-slate-800 p-2 shrink-0">
                         <div className="max-w-xs mx-auto flex flex-col items-center gap-1.5">
                             {gameState === 'LOBBY' && (
@@ -837,17 +836,35 @@
                         </div>
                     )}
 
-                    {/* 튜토리얼 모달 */}
+                    {/* 풍성해진 튜토리얼 모달 */}
                     {showTutorial && (
-                        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-                            <div className="bg-slate-900 border border-slate-700 max-w-xs w-full p-4 rounded-xl flex flex-col max-h-[70vh]">
-                                <h2 className="text-xs font-bold text-amber-400 mb-2">포커 가이드</h2>
-                                <div className="overflow-y-auto text-[11px] text-slate-300 space-y-2 flex-1 text-left">
-                                    <p>• 철수, 영희, 수현이와 경쟁하여 가장 높은 족보를 만드는 사람이 팟을 가져갑니다.</p>
-                                    <p>• 테두리가 반짝이는 사람이 현재 차례입니다.</p>
-                                    <p>• 파산 시 칩 충전이 가능합니다.</p>
+                        <div className="fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4">
+                            <div className="bg-slate-900 border border-amber-500/50 max-w-sm w-full p-4 rounded-xl flex flex-col max-h-[80vh] shadow-2xl">
+                                <h2 className="text-sm font-black text-amber-400 mb-2 text-center border-b border-slate-800 pb-1.5">📜 포커 게임 가이드 & 규칙</h2>
+                                <div className="overflow-y-auto text-[11px] text-slate-300 space-y-3 flex-1 text-left pr-1">
+                                    <div>
+                                        <h3 className="font-bold text-amber-300 mb-0.5">1. 기본 진행 방식</h3>
+                                        <p className="leading-relaxed text-slate-300">철수, 영희, 수현이와 경쟁하여 최종적으로 가장 높은 카드 족보를 만드는 사람이 중앙의 팟(POT)을 독식합니다. 테두리가 반짝이는 플레이어가 현재 차례입니다.</p>
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-amber-300 mb-0.5">2. 베팅 용어 설명</h3>
+                                        <ul className="list-disc pl-4 space-y-1 text-slate-300">
+                                            <li><strong className="text-white">체크:</strong> 추가 베팅 없이 다음 사람에게 순서를 넘깁니다.</li>
+                                            <li><strong className="text-white">콜:</strong> 앞사람의 베팅 금액만큼 칩을 걸어 참여합니다.</li>
+                                            <li><strong className="text-white">베팅/레이즈:</strong> 판돈을 더 높여서 상대를 압박합니다.</li>
+                                            <li><strong className="text-white">폴드:</strong> 포기하고 라운드에서 빠집니다 (칩을 잃지 않음).</li>
+                                        </ul>
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-amber-300 mb-0.5">3. 족보 순위 (높은 순)</h3>
+                                        <p className="leading-relaxed text-slate-300">로얄 플러시 &gt; 스트레이트 플러시 &gt; 포카드 &gt; 풀하우스 &gt; 플러시 &gt; 스트레이트 &gt; 트리플 &gt; 투페어 &gt; 원페어 &gt; 하이카드</p>
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-amber-300 mb-0.5">4. 팁과 주의사항</h3>
+                                        <p className="leading-relaxed text-slate-300">파산(칩 0개)하더라도 버튼을 눌러 칩을 무료로 충전하거나 게임을 처음부터 리셋할 수 있습니다!</p>
+                                    </div>
                                 </div>
-                                <button onClick={() => setShowTutorial(false)} className="mt-2 py-1.5 bg-amber-500 text-slate-950 font-black rounded text-xs">닫기</button>
+                                <button onClick={() => setShowTutorial(false)} className="mt-3 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-xs shadow">닫기</button>
                             </div>
                         </div>
                     )}

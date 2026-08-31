@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>7 카드 스터드(포커)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM CDN -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel for JSX -->
+    <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        @keyframes dealCard {
+            0% { transform: translateY(-80px) scale(0.6); opacity: 0; }
+            100% { transform: translateY(0) scale(1); opacity: 1; }
+        }
+        @keyframes chipFly {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes throwChipToPot {
+            0% { transform: translate(var(--start-x), var(--start-y)) scale(0.5); opacity: 0; }
+            30% { opacity: 1; transform: translate(calc(var(--start-x) * 0.5), calc(var(--start-y) * 0.5)) scale(1.2); }
+            100% { transform: translate(0, 0) scale(0.8); opacity: 0; }
+        }
+        /* 현재 턴 플레이어 강조를 위한 눈에 띄는 네온/펄스 애니메이션 */
+        @keyframes activeGlow {
+            0% { box-shadow: 0 0 5px #fbbf24, 0 0 10px #fbbf24, inset 0 0 5px #fbbf24; border-color: #f59e0b; }
+            50% { box-shadow: 0 0 20px #fef08a, 0 0 35px #fbbf24, inset 0 0 12px #fef08a; border-color: #fef08a; }
+            100% { box-shadow: 0 0 5px #fbbf24, 0 0 10px #fbbf24, inset 0 0 5px #fbbf24; border-color: #f59e0b; }
+        }
+        .active-turn-effect {
+            animation: activeGlow 1.2s infinite ease-in-out;
+            border-width: 2px !important;
+        }
+        .animate-deal {
+            animation: dealCard 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        .animate-chip {
+            animation: chipFly 0.3s ease-out forwards;
+        }
+        .animate-throw-chip {
+            animation: throwChipToPot 0.6s ease-in-out forwards;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-white select-none overflow-x-hidden min-h-screen flex flex-col font-sans">
+    <div id="root" class="flex-1 flex flex-col"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const ANTE = 1;
+        const BRING_IN = 2;
+        const SMALL_LIMIT = 5;
+        const BIG_LIMIT = 10;
+        const INITIAL_CHIPS = 100;
+
+        const SUIT_RANK = { '♠': 4, '♥': 3, '◆': 2, '♣': 1 };
+        const VALUE_RANK = { '2':2, '3':3, '4':4, '5':5, '6':6, '7':7, '8':8, '9':9, '10':10, 'J':11, 'Q':12, 'K':13, 'A':14 };
+
+        function createDeck() {
+            const suits = ['♠', '♥', '◆', '♣'];
+            const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+            let deck = [];
+            for (let s of suits) {
+                for (let v of values) {
+                    deck.push({ suit: s, value: v, rank: VALUE_RANK[v], suitRank: SUIT_RANK[s] });
+                }
+            }
+            for (let i = deck.length - 1; i > 0; i--) {
+                let j = Math.floor(Math.random() * (i + 1));
+                [deck[i], deck[j]] = [deck[j], deck[i]];
+            }
+            return deck;
+        }
+
+        function evaluateHand(cards) {
+            if (!cards || cards.length === 0) return { score: 0, name: '없음' };
+            function getCombinations(arr, k) {
+                if (k === 0) return [[]];
+                if (arr.length === 0) return [];
+                let head = arr[0];
+                let tail = arr.slice(1);
+                let withHead = getCombinations(tail, k - 1).map(c => [head, ...c]);
+                let withoutHead = getCombinations(tail, k);
+                return [...withHead, ...withoutHead];
+            }
+            const allCombs = cards.length >= 5 ? getCombinations(cards, 5) : [cards];
+            let bestScore = -1;
+            let bestName = '';
+
+            for (let comb of allCombs) {
+                const res = evaluate5Cards(comb);
+                if (res.score > bestScore) {
+                    bestScore = res.score;
+                    bestName = res.name;
+                }
+            }
+            return { score: bestScore, name: bestName };
+        }
+
+        function evaluate5Cards(cards) {
+            if (cards.length < 5) {
+                let vals = cards.map(c => c.rank).sort((a,b) => b-a);
+                return { score: vals[0] || 0, name: '진행 중' };
+            }
+            let sorted = [...cards].sort((a,b) => b.rank - a.rank);
+            let values = sorted.map(c => c.rank);
+            let suits = sorted.map(c => c.suit);
+            let isFlush = suits.every(s => s === suits[0]);
+            
+            let isStraight = false;
+            let straightHigh = 0;
+            let uniqueVals = [...new Set(values)];
+            if (uniqueVals.length >= 5) {
+                for (let i = 0; i <= uniqueVals.length - 5; i++) {
+                    if (uniqueVals[i] - uniqueVals[i+4] === 4) {
+                        isStraight = true;
+                        straightHigh = uniqueVals[i];
+                        break;
+                    }
+                }
+                if (!isStraight && uniqueVals.includes(14) && uniqueVals.includes(5) && uniqueVals.includes(4) && uniqueVals.includes(3) && uniqueVals.includes(2)) {
+                    isStraight = true;
+                    straightHigh = 5;
+                }
+            }
+
+            let counts = {};
+            for (let v of values) counts[v] = (counts[v] || 0) + 1;
+            let countArr = Object.entries(counts).map(([v, c]) => ({ val: Number(v), count: c }));
+            countArr.sort((a, b) => b.count - a.count || b.val - a.val);
+
+            let score = 0, name = '';
+            if (isFlush && isStraight) {
+                name = straightHigh === 14 ? '로얄 플러시' : '스트레이트 플러시';
+                score = 8000000 + straightHigh;
+            } else if (countArr[0].count === 4) {
+                name = '포카드';
+                score = 7000000 + countArr[0].val * 100 + countArr[1].val;
+            } else if (countArr[0].count === 3 && countArr[1]?.count >= 2) {
+                name = '풀하우스';
+                score = 6000000 + countArr[0].val * 100 + countArr[1].val;
+            } else if (isFlush) {
+                name = '플러시';
+                score = 5000000 + values[0];
+            } else if (isStraight) {
+                name = '스트레이트';
+                score = 4000000 + straightHigh;
+            } else if (countArr[0].count === 3) {
+                name = '트리플';
+                score = 3000000 + countArr[0].val * 100;
+            } else if (countArr[0].count === 2 && countArr[1]?.count === 2) {
+                name = '투페어';
+                score = 2000000 + countArr[0].val * 100 + countArr[1].val * 10 + countArr[2].val;
+            } else if (countArr[0].count === 2) {
+                name = '원페어';
+                score = 1000000 + countArr[0].val * 100 + values[0];
+            } else {
+                name = '하이카드';
+                score = values[0];
+            }
+            return { score, name };
+        }
+
+        function ChipStack({ amount, hide }) {
+            if (hide) return <span className="text-amber-400 font-bold text-xs">칩: ***</span>;
+            return (
+                <div className="flex items-center gap-1 bg-slate-900/90 px-2.5 py-1 rounded-full border border-amber-500/50 shadow-md animate-chip">
+                    <div className="w-4 h-4 rounded-full bg-red-600 border-2 border-dashed border-white flex items-center justify-center text-[9px] font-extrabold text-white shadow">
+                        $
+                    </div>
+                    <span className="text-amber-400 font-black text-xs">{amount}</span>
+                </div>
+            );
+        }
+
+        function App() {
+            const loadLocal = (key, fallback) => {
+                const saved = localStorage.getItem('clean_poker_' + key);
+                return saved !== null ? JSON.parse(saved) : fallback;
+            };
+
+            const [gameState, setGameState] = useState('LOBBY');
+            
+            /* 
+               플레이어 인덱스 고정:
+               ID 0: 나 (하단)
+               ID 1: 왼쪽 봇 (AI 1)
+               ID 2: 중간 봇 (AI 2 - 상단)
+               ID 3: 오른쪽 봇 (AI 3)
+               => 시계방향 순서: 0(나) -> 1(왼쪽) -> 2(상단/중간) -> 3(오른쪽) -> 0(나)
+            */
+            const [players, setPlayers] = useState(() => loadLocal('players', [
+                { id: 0, name: '나 (플레이어)', isAI: false, chips: INITIAL_CHIPS, cards: [], folded: false, bet: 0 },
+                { id: 1, name: '왼쪽 봇 1', isAI: true, style: 'tight', chips: INITIAL_CHIPS, cards: [], folded: false, bet: 0 },
+                { id: 2, name: '중간 봇 2', isAI: true, style: 'loose', chips: INITIAL_CHIPS, cards: [], folded: false, bet: 0 },
+                { id: 3, name: '오른쪽 봇 3', isAI: true, style: 'bluff', chips: INITIAL_CHIPS, cards: [], folded: false, bet: 0 },
+            ]));
+            
+            const [deck, setDeck] = useState([]);
+            const [street, setStreet] = useState(3);
+            const [pot, setPot] = useState(0);
+            const [currentTurn, setCurrentTurn] = useState(0);
+            const [currentBet, setCurrentBet] = useState(0);
+            const [minRaise, setMinRaise] = useState(0);
+            const [message, setMessage] = useState('환영합니다! 포커 게임을 시작해보세요.');
+            const [winnerInfo, setWinnerInfo] = useState(null);
+            const [initDealCards, setInitDealCards] = useState([]);
+            const [flyingChips, setFlyingChips] = useState([]);
+
+            const [showTutorial, setShowTutorial] = useState(false);
+            const [hideChips, setHideChips] = useState(() => loadLocal('hide_chips', false));
+            const [showResetConfirm, setShowResetConfirm] = useState(false); // 초기화 확인 팝업 상태
+
+            useEffect(() => {
+                localStorage.setItem('clean_poker_players', JSON.stringify(players));
+            }, [players]);
+
+            useEffect(() => {
+                localStorage.setItem('clean_poker_hide_chips', JSON.stringify(hideChips));
+            }, [hideChips]);
+
+            // 플레이어별 칩 출발 위치 좌표 (플레이어 위치 -> 중앙 팟)
+            const getFlyVector = (playerId) => {
+                switch(playerId) {
+                    case 0: return { '--start-x': '0px', '--start-y': '140px' };  // 하단(나) -> 중앙
+                    case 1: return { '--start-x': '-120px', '--start-y': '0px' };// 왼쪽 봇 -> 중앙
+                    case 2: return { '--start-x': '0px', '--start-y': '-140px' }; // 중간 봇(상단) -> 중앙
+                    case 3: return { '--start-x': '120px', '--start-y': '0px' }; // 오른쪽 봇 -> 중앙
+                    default: return { '--start-x': '0px', '--start-y': '0px' };
+                }
+            };
+
+            function triggerChipAnimation(playerId) {
+                const id = Date.now() + Math.random();
+                setFlyingChips(prev => [...prev, { id, playerId }]);
+                setTimeout(() => {
+                    setFlyingChips(prev => prev.filter(c => c.id !== id));
+                }, 600);
+            }
+
+            function resetGameData() {
+                localStorage.clear();
+                setPlayers([
+                    { id: 0, name: '나 (플레이어)', isAI: false, chips: INITIAL_CHIPS, cards: [], folded: false, bet: 0 },
+                    { id: 1, name: '왼쪽 봇 1', isAI: true, style: 'tight', chips: INITIAL_CHIPS, cards: [], folded: false, bet: 0 },
+                    { id: 2, name: '중간 봇 2', isAI: true, style: 'loose', chips: INITIAL_CHIPS, cards: [], folded: false, bet: 0 },
+                    { id: 3, name: '오른쪽 봇 3', isAI: true, style: 'bluff', chips: INITIAL_CHIPS, cards: [], folded: false, bet: 0 },
+                ]);
+                setGameState('LOBBY');
+                setShowResetConfirm(false);
+                setMessage('모든 게임 데이터가 초기화되었습니다.');
+            }
+
+            // 칩 빌리기(충전) 기능
+            function borrowChips() {
+                let updatedPlayers = players.map(p => ({
+                    ...p,
+                    chips: p.chips <= 0 ? 100 : p.chips, // 칩이 0 이하인 플레이어에게 100칩 충전
+                    folded: false
+                }));
+                setPlayers(updatedPlayers);
+                setGameState('LOBBY');
+                setMessage('뱅크에서 칩 100개를 지원받았습니다! 다시 시작하세요.');
+            }
+
+            function startNewHand() {
+                const activePlayers = players.filter(p => p.chips > 0);
+                if (activePlayers.length <= 1) {
+                    setGameState('GAMEOVER');
+                    return;
+                }
+
+                let newDeck = createDeck();
+                let updatedPlayers = players.map(p => ({
+                    ...p,
+                    cards: [],
+                    folded: p.chips <= 0,
+                    bet: 0
+                }));
+
+                let currentPot = 0;
+                updatedPlayers.forEach(p => {
+                    if (!p.folded) {
+                        p.chips -= ANTE;
+                        currentPot += ANTE;
+                        triggerChipAnimation(p.id);
+                    }
+                });
+
+                let tempDealCards = [];
+                updatedPlayers.forEach(p => {
+                    let h1 = newDeck.pop();
+                    let h2 = newDeck.pop();
+                    let d1 = newDeck.pop();
+                    if (!p.isAI) {
+                        tempDealCards = [h1, h2, d1];
+                    } else {
+                        let drawn = [h1, h2, d1];
+                        let doorIdx = Math.floor(Math.random() * 3);
+                        let door = drawn.splice(doorIdx, 1)[0];
+                        p.cards = [
+                            { ...door, faceUp: true, type: 'door' }, 
+                            { ...drawn[0], faceUp: false, type: 'hidden' }, 
+                            { ...drawn[1], faceUp: false, type: 'hidden' }
+                        ];
+                    }
+                });
+
+                setDeck(newDeck);
+                setPot(currentPot);
+                setPlayers(updatedPlayers);
+
+                if (updatedPlayers[0].folded) {
+                    setGameState('PLAYING');
+                    setupThirdStreet(updatedPlayers, newDeck, currentPot);
+                } else {
+                    setInitDealCards(tempDealCards);
+                    setGameState('CHOOSE_DOOR');
+                    setMessage('공개할 도어카드를 선택하세요.');
+                }
+            }
+
+            function handleSelectDoor(selectedCardIndex) {
+                let chosenDoor = initDealCards[selectedCardIndex];
+                let remainingCards = initDealCards.filter((_, idx) => idx !== selectedCardIndex);
+
+                let updatedPlayers = [...players];
+                updatedPlayers[0].cards = [
+                    { ...chosenDoor, faceUp: true, type: 'door' },
+                    { ...remainingCards[0], faceUp: true, type: 'hidden' }, 
+                    { ...remainingCards[1], faceUp: true, type: 'hidden' }
+                ];
+
+                setPlayers(updatedPlayers);
+                setGameState('PLAYING');
+                setupThirdStreet(updatedPlayers, deck, pot);
+            }
+
+            function setupStreetData(currentStreetNum, currentPlayers, currentDeck, currentPot) {
+                setStreet(currentStreetNum);
+                
+                if (currentStreetNum > 3) {
+                    currentPlayers.forEach(p => {
+                        if (!p.folded) {
+                            let card = currentDeck.pop();
+                            let isHiddenCard = (currentStreetNum === 7);
+                            let type = isHiddenCard ? 'hidden' : 'open';
+                            let faceUp = !p.isAI || !isHiddenCard; 
+                            if (!p.isAI) faceUp = true; 
+
+                            p.cards.push({ ...card, faceUp, type });
+                        }
+                    });
+                }
+
+                setDeck([...currentDeck]);
+                setPot(currentPot);
+
+                let firstActor = getFirstActor(currentPlayers, currentStreetNum);
+                setCurrentTurn(firstActor);
+
+                currentPlayers.forEach(p => p.bet = 0);
+                setCurrentBet(0);
+                setMinRaise(currentStreetNum <= 4 ? SMALL_LIMIT : BIG_LIMIT);
+                setPlayers([...currentPlayers]);
+
+                if (currentStreetNum === 3) {
+                    handleBringIn(currentPlayers, firstActor, currentPot);
+                }
+            }
+
+            function setupThirdStreet(currentPlayers, currentDeck, currentPot) {
+                setupStreetData(3, currentPlayers, currentDeck, currentPot);
+            }
+
+            function handleBringIn(currentPlayers, bringInIdx, currentPot) {
+                let p = currentPlayers[bringInIdx];
+                let actualBringIn = Math.min(BRING_IN, p.chips);
+                p.chips -= actualBringIn;
+                p.bet = actualBringIn;
+                let newPot = currentPot + actualBringIn;
+                setPot(newPot);
+                setCurrentBet(actualBringIn);
+                triggerChipAnimation(p.id);
+                setMessage(`${p.name} 브링인 (${actualBringIn})`);
+                setPlayers([...currentPlayers]);
+            }
+
+            // 선 플레이어 선정 규칙 (3스트리트: 가장 낮은 도어카드 / 4스트리트 이후: 공개된 카드 중 족보가 가장 높은 사람)
+            function getFirstActor(currentPlayers, st) {
+                let active = currentPlayers.map((p, idx) => ({ idx, p })).filter(x => !x.p.folded);
+                if (active.length === 0) return 0;
+
+                let targetIdx = active[0].idx;
+
+                if (st === 3) {
+                    let lowVal = 99, lowSuit = 99;
+                    active.forEach(item => {
+                        let openCard = item.p.cards.find(c => c.faceUp && c.type !== 'hidden');
+                        if (openCard) {
+                            if (openCard.rank < lowVal || (openCard.rank === lowVal && openCard.suitRank < lowSuit)) {
+                                lowVal = openCard.rank;
+                                lowSuit = openCard.suitRank;
+                                targetIdx = item.idx;
+                            }
+                        }
+                    });
+                } else {
+                    let highRankScore = -1;
+                    active.forEach(item => {
+                        let visibleCards = item.p.cards.filter(c => c.faceUp);
+                        let evalRes = evaluateHand(visibleCards);
+                        if (evalRes.score > highRankScore) {
+                            highRankScore = evalRes.score;
+                            targetIdx = item.idx;
+                        }
+                    });
+                }
+                return targetIdx;
+            }
+
+            useEffect(() => {
+                if (gameState === 'PLAYING') {
+                    let activePlayers = players.filter(p => !p.folded);
+                    if (activePlayers.length <= 1) {
+                        endRoundEarly(activePlayers[0]);
+                        return;
+                    }
+                    let curPlayer = players[currentTurn];
+                    if (curPlayer && curPlayer.isAI && !curPlayer.folded && curPlayer.chips > 0) {
+                        const timer = setTimeout(() => {
+                            executeAITurn();
+                        }, 1800);
+                        return () => clearTimeout(timer);
+                    }
+                }
+            }, [currentTurn, gameState, players]);
+
+            function executeAITurn() {
+                let p = players[currentTurn];
+                let callAmount = currentBet - p.bet;
+                let limit = street <= 4 ? SMALL_LIMIT : BIG_LIMIT;
+                let openCards = p.cards.filter(c => c.faceUp);
+                let handVal = evaluateHand(openCards).score;
+                let action = 'call';
+
+                if (p.style === 'tight') {
+                    if (callAmount > limit * 2 && handVal < 1000000 && Math.random() < 0.7) action = 'fold';
+                    else if (handVal > 2000000 && Math.random() < 0.5 && p.chips >= callAmount + limit) action = 'raise';
+                    else action = 'call';
+                } else if (p.style === 'loose') {
+                    if (callAmount > limit * 3 && Math.random() < 0.3) action = 'fold';
+                    else if (Math.random() < 0.2 && p.chips >= callAmount + limit) action = 'raise';
+                    else action = 'call';
+                } else {
+                    if (Math.random() < 0.25 && p.chips >= callAmount + limit) action = 'raise';
+                    else if (callAmount > limit * 2 && Math.random() < 0.4) action = 'fold';
+                    else action = 'call';
+                }
+
+                if (callAmount === 0 && action === 'call') action = 'check';
+                handleAction(action);
+            }
+
+            function handleAction(action) {
+                let updatedPlayers = [...players];
+                let p = updatedPlayers[currentTurn];
+                let callAmount = currentBet - p.bet;
+                let limit = street <= 4 ? SMALL_LIMIT : BIG_LIMIT;
+
+                if (action === 'fold') {
+                    p.folded = true;
+                    setMessage(`${p.name} 폴드`);
+                } else if (action === 'check') {
+                    setMessage(`${p.name} 체크`);
+                } else if (action === 'call') {
+                    let pay = Math.min(callAmount, p.chips);
+                    if (pay > 0) {
+                        p.chips -= pay;
+                        p.bet += pay;
+                        setPot(prev => prev + pay);
+                        triggerChipAnimation(p.id);
+                    }
+                    setMessage(`${p.name} 콜 (${pay})`);
+                } else if (action === 'bet' || action === 'raise') {
+                    let addAmount = callAmount + limit;
+                    let pay = Math.min(addAmount, p.chips);
+                    if (pay > 0) {
+                        p.chips -= pay;
+                        p.bet += pay;
+                        setCurrentBet(p.bet);
+                        setPot(prev => prev + pay);
+                        triggerChipAnimation(p.id);
+                    }
+                    setMessage(`${p.name} 베팅/레이즈`);
+                }
+
+                setPlayers(updatedPlayers);
+                checkNextTurnOrNextStreet(updatedPlayers);
+            }
+
+            // 시계 방향 순서로 다음 턴 넘기기 (0 -> 1 -> 2 -> 3 -> 0)
+            function checkNextTurnOrNextStreet(currentPlayers) {
+                let active = currentPlayers.filter(p => !p.folded);
+                if (active.length <= 1) {
+                    endRoundEarly(active[0]);
+                    return;
+                }
+
+                let allMatched = active.every(p => p.bet === currentBet || p.chips === 0);
+                
+                let nextIdx = (currentTurn + 1) % currentPlayers.length;
+                let loopCount = 0;
+                while (currentPlayers[nextIdx].folded || currentPlayers[nextIdx].chips === 0) {
+                    nextIdx = (nextIdx + 1) % currentPlayers.length;
+                    loopCount++;
+                    if (loopCount > 10) break;
+                }
+
+                if (allMatched) {
+                    if (street < 7) {
+                        setMessage(`${street + 1}스트리트 카드를 배분합니다...`);
+                        setTimeout(() => {
+                            setupStreetData(street + 1, currentPlayers, deck, pot);
+                        }, 1500);
+                    } else {
+                        setTimeout(() => {
+                            startShowdown(currentPlayers);
+                        }, 1500);
+                    }
+                } else {
+                    setCurrentTurn(nextIdx);
+                }
+            }
+
+            function endRoundEarly(winner) {
+                let updatedPlayers = [...players];
+                if (winner) {
+                    winner.chips += pot;
+                    setWinnerInfo({ name: winner.name, handName: '상대방 전원 폴드', prize: pot });
+                }
+                setGameState('SHOWDOWN');
+                setMessage(winner ? `${winner.name} 승리!` : '라운드 종료');
+                setPlayers(updatedPlayers);
+            }
+
+            function startShowdown(currentPlayers) {
+                let active = currentPlayers.filter(p => !p.folded);
+                let bestScore = -1;
+                let winners = [];
+
+                active.forEach(p => {
+                    let res = evaluateHand(p.cards);
+                    p.finalHand = res;
+                    if (res.score > bestScore) {
+                        bestScore = res.score;
+                        winners = [p];
+                    } else if (res.score === bestScore) {
+                        winners.push(p);
+                    }
+                });
+
+                let prize = Math.floor(pot / winners.length);
+                winners.forEach(w => w.chips += prize);
+
+                setWinnerInfo({
+                    name: winners.map(w => w.name).join(', '),
+                    handName: winners[0].finalHand.name,
+                    prize: pot
+                });
+                setGameState('SHOWDOWN');
+                setMessage(`승자: ${winners.map(w => w.name).join(', ')}`);
+                setPlayers([...currentPlayers]);
+            }
+
+            function renderCard(card, index, isHidden = false, scaleClass = "w-10 h-15 sm:w-12 sm:h-17 text-xs", isAiHiddenCard = false) {
+                if (!card) return <div className={`${scaleClass} bg-slate-800 rounded border border-slate-700`}></div>;
+
+                if (isAiHiddenCard) {
+                    return (
+                        <div className={`${scaleClass} animate-deal bg-blue-900 border-2 border-blue-600 rounded-lg shadow-md flex items-center justify-center relative shadow-indigo-900/50`}>
+                            <span className="text-[10px] text-blue-300 font-extrabold">HIDDEN</span>
+                        </div>
+                    );
+                }
+
+                const isRed = card.suit === '♥' || card.suit === '◆';
+                const isDoor = card.type === 'door';
+
+                return (
+                    <div className={`${scaleClass} animate-deal bg-white border-2 ${isHidden ? 'border-amber-500' : isDoor ? 'border-purple-500' : 'border-slate-300'} rounded-lg shadow-md flex flex-col justify-between p-1 ${isRed ? 'text-red-600' : 'text-slate-900'} font-bold relative`}>
+                        {isHidden && <span className="absolute -top-2 -right-1 bg-amber-600 text-white text-[7px] px-1 rounded-full">히든</span>}
+                        {isDoor && <span className="absolute -top-2 -right-1 bg-purple-600 text-white text-[7px] px-1 rounded-full">도어</span>}
+                        <div className="flex justify-between items-center leading-none">
+                            <span>{card.value}</span>
+                            <span className="text-[8px]">{card.suit}</span>
+                        </div>
+                        <div className="text-center text-xs sm:text-sm">{card.suit}</div>
+                        <div className="flex justify-between items-center leading-none rotate-180">
+                            <span>{card.value}</span>
+                            <span className="text-[8px]">{card.suit}</span>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="flex flex-col h-screen max-h-screen bg-slate-950 text-white font-sans overflow-hidden">
+                    {/* 상단바 */}
+                    <header className="bg-slate-900 border-b border-slate-800 px-4 py-2 flex justify-between items-center shadow-md shrink-0">
+                        <div className="flex items-center gap-2">
+                            <h1 className="text-xs sm:text-sm font-black tracking-wider text-amber-400">♠ 클린 포커</h1>
+                            <button 
+                                onClick={() => setShowTutorial(true)}
+                                className="bg-sky-600 hover:bg-sky-500 text-[10px] px-2 py-0.5 rounded-lg font-bold shadow transition-colors"
+                            >
+                                설명
+                            </button>
+                        </div>
+                        <div className="flex items-center space-x-2 text-xs">
+                            <button 
+                                onClick={() => setHideChips(!hideChips)}
+                                className="bg-slate-800 hover:bg-slate-700 px-2 py-0.5 rounded-lg text-slate-300 text-[11px]"
+                            >
+                                {hideChips ? '🙈 칩 숨김' : '👁️ 칩 보기'}
+                            </button>
+                            <button 
+                                onClick={() => setShowResetConfirm(true)}
+                                className="bg-rose-950/80 hover:bg-rose-900 px-2 py-0.5 rounded-lg text-rose-200 text-[11px]"
+                            >
+                                초기화
+                            </button>
+                            <span className="bg-slate-800 px-2 py-0.5 rounded-lg text-sky-300 font-bold text-[11px]">{street}스트리트</span>
+                        </div>
+                    </header>
+
+                    {/* 메인 포커 테이블 레이아웃 */}
+                    <div className="flex-1 relative flex flex-col justify-between p-2 max-w-4xl mx-auto w-full overflow-hidden">
+                        
+                        {/* 칩 날리기 애니메이션 효과 요소들 */}
+                        {flyingChips.map(fc => {
+                            const styleVector = getFlyVector(fc.playerId);
+                            return (
+                                <div 
+                                    key={fc.id} 
+                                    style={styleVector}
+                                    className="absolute inset-0 m-auto w-6 h-6 rounded-full bg-red-600 border-2 border-dashed border-white flex items-center justify-center text-[10px] font-extrabold text-white shadow-xl z-50 pointer-events-none animate-throw-chip"
+                                >
+                                    $
+                                </div>
+                            );
+                        })}
+
+                        {/* 상단 봇 (ID: 2 - 중간 봇) */}
+                        {players[2] && (
+                            <div className={`flex flex-col items-center p-1.5 rounded-2xl border transition-all duration-300 ${currentTurn === 2 ? 'active-turn-effect bg-slate-900' : 'border-slate-800 bg-slate-900/50'} w-full max-w-md mx-auto shrink-0`}>
+                                <div className="flex justify-between w-full text-xs mb-1 px-1">
+                                    <span className="font-bold text-slate-200">{players[2].name} {players[2].folded && '(폴드)'}</span>
+                                    <ChipStack amount={players[2].chips} hide={hideChips} />
+                                </div>
+                                <div className="flex gap-2 w-full justify-center items-center my-0.5">
+                                    <div className="flex gap-1 items-center bg-slate-950/40 p-1 rounded-xl border border-slate-800">
+                                        {players[2].cards.map((c, i) => {
+                                            let isAiHidden = (c.type === 'hidden' && !c.faceUp);
+                                            return <div key={i}>{renderCard(c, i, c.type==='hidden', "w-7 h-10 sm:w-8 sm:h-12 text-[7px]", isAiHidden)}</div>;
+                                        })}
+                                    </div>
+                                </div>
+                                <div className="text-[10px] text-slate-400">베팅: <strong className="text-amber-400">{players[2].bet}</strong></div>
+                            </div>
+                        )}
+
+                        {/* 중단 테이블 (좌측: ID 1 왼쪽 봇, 우측: ID 3 오른쪽 봇) */}
+                        <div className="flex justify-between items-center w-full my-1 px-1 shrink-0">
+                            {/* 왼쪽 봇 (ID: 1) */}
+                            {players[1] && (
+                                <div className={`flex flex-col items-center p-1.5 rounded-2xl border transition-all duration-300 ${currentTurn === 1 ? 'active-turn-effect bg-slate-900' : 'border-slate-800 bg-slate-900/50'} w-[48%] max-w-[190px]`}>
+                                    <div className="text-[10px] font-bold text-slate-200 truncate w-full text-center">{players[1].name}</div>
+                                    <div className="my-0.5"><ChipStack amount={players[1].chips} hide={hideChips} /></div>
+                                    <div className="flex gap-1 bg-slate-950/40 p-1 rounded-lg border border-slate-800 flex-wrap justify-center min-h-[38px] items-center">
+                                        {players[1].cards.map((c, i) => {
+                                            let isAiHidden = (c.type === 'hidden' && !c.faceUp);
+                                            return <div key={i}>{renderCard(c, i, c.type==='hidden', "w-5 h-8 sm:w-6 sm:h-9 text-[6px]", isAiHidden)}</div>;
+                                        })}
+                                    </div>
+                                    <div className="text-[9px] text-slate-400 mt-0.5">베팅: {players[1].bet}</div>
+                                </div>
+                            )}
+
+                            {/* 중앙 팟 및 알림창 */}
+                            <div className="flex flex-col items-center justify-center text-center px-1 shrink-0">
+                                <div className="bg-emerald-950/90 border-4 border-emerald-600/80 rounded-full w-36 h-36 sm:w-42 sm:h-42 shadow-2xl flex flex-col items-center justify-center p-2 relative overflow-hidden ring-4 ring-emerald-900/40">
+                                    <div className="absolute inset-1.5 border border-emerald-500/20 rounded-full pointer-events-none"></div>
+                                    <div className="text-[10px] font-black text-amber-300 tracking-wider mb-0.5">총 팟 (POT)</div>
+                                    <div className="text-lg sm:text-xl font-black text-amber-400 drop-shadow-md mb-1 animate-chip">💰 {pot}</div>
+                                    <div className="bg-black/50 px-2 py-1 rounded-md border border-emerald-500/30 w-32 sm:w-36 overflow-hidden">
+                                        <div className="text-[10px] text-emerald-200 font-medium whitespace-nowrap overflow-text text-ellipsis">{message}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 오른쪽 봇 (ID: 3) */}
+                            {players[3] && (
+                                <div className={`flex flex-col items-center p-1.5 rounded-2xl border transition-all duration-300 ${currentTurn === 3 ? 'active-turn-effect bg-slate-900' : 'border-slate-800 bg-slate-900/50'} w-[48%] max-w-[190px]`}>
+                                    <div className="text-[10px] font-bold text-slate-200 truncate w-full text-center">{players[3].name}</div>
+                                    <div className="my-0.5"><ChipStack amount={players[3].chips} hide={hideChips} /></div>
+                                    <div className="flex gap-1 bg-slate-950/40 p-1 rounded-lg border border-slate-800 flex-wrap justify-center min-h-[38px] items-center">
+                                        {players[3].cards.map((c, i) => {
+                                            let isAiHidden = (c.type === 'hidden' && !c.faceUp);
+                                            return <div key={i}>{renderCard(c, i, c.type==='hidden', "w-5 h-8 sm:w-6 sm:h-9 text-[6px]", isAiHidden)}</div>;
+                                        })}
+                                    </div>
+                                    <div className="text-[9px] text-slate-400 mt-0.5">베팅: {players[3].bet}</div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* 내 좌석 (ID: 0 - 하단) */}
+                        {players[0] && (
+                            <div className={`flex flex-col items-center p-2.5 rounded-2xl border transition-all duration-300 ${currentTurn === 0 ? 'active-turn-effect bg-slate-900' : 'border-slate-800 bg-slate-900/80'} w-full max-w-md mx-auto shrink-0`}>
+                                <div className="flex justify-between w-full text-xs mb-1 px-1">
+                                    <span className="font-bold text-amber-300">{players[0].name} {players[0].folded && '(폴드)'}</span>
+                                    <ChipStack amount={players[0].chips} hide={hideChips} />
+                                </div>
+                                
+                                <div className="flex gap-1.5 w-full justify-center min-h-[52px] items-center bg-slate-950/50 p-1.5 rounded-xl border border-slate-800">
+                                    {players[0].cards.length > 0 ? (
+                                        players[0].cards.map((c, i) => <div key={i}>{renderCard(c, i, c.type==='hidden', "w-9 h-13 sm:w-10 sm:h-14 text-xs", false)}</div>)
+                                    ) : (
+                                        <span className="text-xs text-slate-400">카드를 기다리는 중...</span>
+                                    )}
+                                </div>
+
+                                <div className="flex justify-between w-full text-xs text-slate-300 mt-1.5 font-medium px-1">
+                                    <span>베팅액: <strong className="text-amber-400">{players[0].bet}</strong></span>
+                                    <span>내 족보: <strong className="text-amber-300">{evaluateHand(players[0].cards).name}</strong></span>
+                                </div>
+                            </div>
+                        )}
+
+                    </div>
+
+                    {/* 하단 컨트롤 패널 */}
+                    <div className="bg-slate-900 border-t border-slate-800 p-2.5 shrink-0">
+                        <div className="max-w-xl mx-auto flex flex-col items-center gap-2">
+                            {gameState === 'LOBBY' && (
+                                <button 
+                                    onClick={startNewHand}
+                                    className="w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl shadow-lg text-xs transition-colors"
+                                >
+                                    포커 게임 시작하기
+                                </button>
+                            )}
+
+                            {gameState === 'CHOOSE_DOOR' && (
+                                <div className="w-full text-center">
+                                    <p className="text-xs text-amber-300 mb-1.5 font-bold">처음 받은 3장의 카드 중 공개할 도어카드를 선택하세요!</p>
+                                    <div className="flex justify-center gap-2.5">
+                                        {initDealCards.map((card, idx) => (
+                                            <div 
+                                                key={idx} 
+                                                onClick={() => handleSelectDoor(idx)}
+                                                className="cursor-pointer bg-white border-2 border-amber-500 rounded-xl p-2 text-slate-900 hover:scale-105 transition-transform w-12 h-16 flex flex-col justify-between font-bold text-xs shadow-xl"
+                                            >
+                                                <div className="flex justify-between"><span>{card.value}</span><span>{card.suit}</span></div>
+                                                <div className="text-center text-sm">{card.suit}</div>
+                                                <div className="flex justify-between rotate-180"><span>{card.value}</span><span>{card.suit}</span></div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {gameState === 'PLAYING' && currentTurn === 0 && !players[0].folded && (
+                                <div className="grid grid-cols-5 gap-1.5 w-full">
+                                    <button 
+                                        onClick={() => handleAction('fold')}
+                                        className="py-2 bg-rose-600 hover:bg-rose-500 font-bold rounded-xl text-xs shadow transition-colors"
+                                    >
+                                        폴드
+                                    </button>
+                                    <button 
+                                        onClick={() => handleAction('check')}
+                                        disabled={currentBet > players[0].bet}
+                                        className="py-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-40 font-bold rounded-xl text-xs shadow transition-colors"
+                                    >
+                                        체크
+                                    </button>
+                                    <button 
+                                        onClick={() => handleAction('call')}
+                                        disabled={currentBet <= players[0].bet}
+                                        className="py-2 bg-sky-600 hover:bg-sky-500 disabled:opacity-40 font-bold rounded-xl text-xs shadow transition-colors"
+                                    >
+                                        콜 ({Math.max(0, currentBet - players[0].bet)})
+                                    </button>
+                                    <button 
+                                        onClick={() => handleAction('bet')}
+                                        disabled={currentBet > players[0].bet}
+                                        className="py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 font-bold rounded-xl text-xs shadow transition-colors"
+                                    >
+                                        베팅
+                                    </button>
+                                    <button 
+                                        onClick={() => handleAction('bet')}
+                                        disabled={currentBet <= players[0].bet}
+                                        className="py-2 bg-teal-600 hover:bg-teal-500 disabled:opacity-40 font-bold rounded-xl text-xs shadow transition-colors"
+                                    >
+                                        레이즈
+                                    </button>
+                                </div>
+                            )}
+
+                            {gameState === 'SHOWDOWN' && (
+                                <div className="w-full text-center flex flex-col gap-1.5">
+                                    <div className="bg-slate-800 p-2 rounded-xl border border-amber-500/50">
+                                        <h3 className="text-amber-400 font-bold text-xs">라운드 결과</h3>
+                                        <p className="text-xs mt-0.5">승자: <span className="text-white font-bold">{winnerInfo?.name}</span> ({winnerInfo?.handName})</p>
+                                    </div>
+                                    <button 
+                                        onClick={startNewHand}
+                                        className="w-full py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl shadow-lg text-xs transition-colors"
+                                    >
+                                        다음 판 진행하기
+                                    </button>
+                                </div>
+                            )}
+
+                            {gameState === 'GAMEOVER' && (
+                                <div className="w-full text-center flex flex-col gap-2">
+                                    <div className="bg-rose-950/60 p-2 rounded-xl border border-rose-500/50">
+                                        <h3 className="text-rose-400 font-black text-xs mb-0.5">파산하셨습니다!</h3>
+                                        <p className="text-[11px] text-slate-300">칩이 모두 소진되어 게임을 진행할 수 없습니다.</p>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <button 
+                                            onClick={borrowChips}
+                                            className="py-2 bg-emerald-600 hover:bg-emerald-500 font-black rounded-xl shadow-lg text-xs transition-colors"
+                                        >
+                                            💵 칩 빌리기 (+100)
+                                        </button>
+                                        <button 
+                                            onClick={() => setShowResetConfirm(true)}
+                                            className="py-2 bg-sky-600 hover:bg-sky-500 font-black rounded-xl shadow-lg text-xs transition-colors"
+                                        >
+                                            처음부터 리셋
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* 초기화 확인 팝업 모달 */}
+                    {showResetConfirm && (
+                        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+                            <div className="bg-slate-900 border border-slate-700 max-w-sm w-full p-5 rounded-3xl shadow-2xl flex flex-col text-center">
+                                <h2 className="text-sm font-bold text-amber-400 mb-2">⚠️ 초기화 확인</h2>
+                                <p className="text-xs text-slate-300 mb-4 leading-relaxed">
+                                    정말로 게임을 초기화하시겠습니까?<br />모든 칩과 기록이 리셋됩니다.
+                                </p>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button 
+                                        onClick={() => setShowResetConfirm(false)}
+                                        className="py-2 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-xl text-xs"
+                                    >
+                                        취소
+                                    </button>
+                                    <button 
+                                        onClick={resetGameData}
+                                        className="py-2 bg-rose-600 hover:bg-rose-500 text-white font-black rounded-xl text-xs"
+                                    >
+                                        초기화 하기
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 가이드 팝업 */}
+                    {showTutorial && (
+                        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+                            <div className="bg-slate-900 border border-slate-700 max-w-lg w-full p-5 rounded-3xl shadow-2xl flex flex-col max-h-[85vh]">
+                                <h2 className="text-sm font-bold text-amber-400 mb-2">📖 게임 설명</h2>
+                                <div className="overflow-y-auto text-xs text-slate-300 space-y-2.5 pr-2 flex-1 leading-relaxed">
+                                    <p><strong>자리 및 순서 안내:</strong> 좌측(왼쪽 봇 1), 상단(중간 봇 2), 우측(오른쪽 봇 3), 하단(나) 순으로 시계 방향(0 ➔ 1 ➔ 2 ➔ 3) 회전합니다.</p>
+                                    <p><strong>턴 이펙트:</strong> 현재 차례인 플레이어의 영역은 눈에 확 띄는 네온 골드빛 펄스 이펙트가 반짝입니다.</p>
+                                    <p><strong>칩 파산 시스템:</strong> 칩을 모두 잃었을 경우 [칩 빌리기]를 통해 100칩을 충전하고 계속 플레이할 수 있습니다.</p>
+                                </div>
+                                <button 
+                                    onClick={() => setShowTutorial(false)}
+                                    className="mt-3 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs"
+                                >
+                                    확인
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>

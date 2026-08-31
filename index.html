@@ -66,6 +66,7 @@
         const SMALL_LIMIT = 5;
         const BIG_LIMIT = 10;
         const INITIAL_CHIPS = 100;
+        const STORAGE_KEY = 'poker_game_players_v1';
 
         const SUIT_RANK = { '♠': 4, '♥': 3, '◆': 2, '♣': 1 };
         const VALUE_RANK = { '2':2, '3':3, '4':4, '5':5, '6':6, '7':7, '8':8, '9':9, '10':10, 'J':11, 'Q':12, 'K':13, 'A':14 };
@@ -190,12 +191,29 @@
         function App() {
             const [gameState, setGameState] = useState('LOBBY');
             
-            const [players, setPlayers] = useState([
-                { id: 0, name: '나', isAI: false, chips: INITIAL_CHIPS, cards: [], folded: false, bet: 0 },
-                { id: 1, name: '철수', isAI: true, style: 'tight', chips: INITIAL_CHIPS, cards: [], folded: false, bet: 0 },
-                { id: 2, name: '영희', isAI: true, style: 'loose', chips: INITIAL_CHIPS, cards: [], folded: false, bet: 0 },
-                { id: 3, name: '수현', isAI: true, style: 'bluff', chips: INITIAL_CHIPS, cards: [], folded: false, bet: 0 },
-            ]);
+            // 로컬 스토리지에서 플레이어 칩 상태 불러오기
+            const [players, setPlayers] = useState(() => {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    try {
+                        const parsed = JSON.parse(saved);
+                        return parsed.map(p => ({
+                            ...p,
+                            cards: [],
+                            folded: false,
+                            bet: 0
+                        }));
+                    } catch (e) {
+                        console.error(e);
+                    }
+                }
+                return [
+                    { id: 0, name: '나', isAI: false, chips: INITIAL_CHIPS, cards: [], folded: false, bet: 0 },
+                    { id: 1, name: '철수', isAI: true, style: 'tight', chips: INITIAL_CHIPS, cards: [], folded: false, bet: 0 },
+                    { id: 2, name: '영희', isAI: true, style: 'loose', chips: INITIAL_CHIPS, cards: [], folded: false, bet: 0 },
+                    { id: 3, name: '수현', isAI: true, style: 'bluff', chips: INITIAL_CHIPS, cards: [], folded: false, bet: 0 },
+                ];
+            });
             
             const [deck, setDeck] = useState([]);
             const [street, setStreet] = useState(3);
@@ -211,6 +229,18 @@
             const [showTutorial, setShowTutorial] = useState(false);
             const [hideChips, setHideChips] = useState(false);
             const [showResetConfirm, setShowResetConfirm] = useState(false);
+
+            // 칩 변동 시 로컬 스토리지에 자동 저장
+            useEffect(() => {
+                const lightweight = players.map(p => ({
+                    id: p.id,
+                    name: p.name,
+                    isAI: p.isAI,
+                    style: p.style,
+                    chips: p.chips
+                }));
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(lightweight));
+            }, [players]);
 
             const getFlyVector = (playerId) => {
                 switch(playerId) {
@@ -231,13 +261,14 @@
             }
 
             function resetGameData() {
-                localStorage.clear();
-                setPlayers([
+                localStorage.removeItem(STORAGE_KEY);
+                const freshPlayers = [
                     { id: 0, name: '나', isAI: false, chips: INITIAL_CHIPS, cards: [], folded: false, bet: 0 },
                     { id: 1, name: '철수', isAI: true, style: 'tight', chips: INITIAL_CHIPS, cards: [], folded: false, bet: 0 },
                     { id: 2, name: '영희', isAI: true, style: 'loose', chips: INITIAL_CHIPS, cards: [], folded: false, bet: 0 },
                     { id: 3, name: '수현', isAI: true, style: 'bluff', chips: INITIAL_CHIPS, cards: [], folded: false, bet: 0 },
-                ]);
+                ];
+                setPlayers(freshPlayers);
                 setGameState('LOBBY');
                 setShowResetConfirm(false);
                 setMessage('초기화되었습니다.');
@@ -836,7 +867,7 @@
                         </div>
                     )}
 
-                    {/* 풍성해진 튜토리얼 모달 */}
+                    {/* 튜토리얼 모달 */}
                     {showTutorial && (
                         <div className="fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4">
                             <div className="bg-slate-900 border border-amber-500/50 max-w-sm w-full p-4 rounded-xl flex flex-col max-h-[80vh] shadow-2xl">

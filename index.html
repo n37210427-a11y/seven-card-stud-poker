@@ -167,13 +167,13 @@
         }
 
         function ChipStack({ amount, hide }) {
-            if (hide) return <span className="text-amber-400 font-bold text-xs">칩: ***</span>;
+            if (hide) return <span className="text-amber-400 font-bold text-xs whitespace-nowrap">칩: ***</span>;
             return (
-                <div className="flex items-center gap-1.5 bg-slate-900/95 px-3 py-1.5 rounded-full border border-amber-500/50 shadow-md animate-chip">
-                    <div className="w-5 h-5 rounded-full bg-red-600 border-2 border-dashed border-white flex items-center justify-center text-[10px] font-extrabold text-white shadow">
+                <div className="flex items-center gap-1 bg-slate-900/95 px-2.5 py-1 rounded-full border border-amber-500/50 shadow-md animate-chip shrink-0">
+                    <div className="w-4 h-4 rounded-full bg-red-600 border-2 border-dashed border-white flex items-center justify-center text-[9px] font-extrabold text-white shadow">
                         $
                     </div>
-                    <span className="text-amber-400 font-black text-sm">{amount}</span>
+                    <span className="text-amber-400 font-black text-xs sm:text-sm">{amount}</span>
                 </div>
             );
         }
@@ -181,7 +181,6 @@
         function App() {
             const [gameState, setGameState] = useState('LOBBY');
             
-            // 철수, 영희, 수현 이름 고정 초기화
             const [players, setPlayers] = useState([
                 { id: 0, name: '나 (플레이어)', isAI: false, chips: INITIAL_CHIPS, cards: [], folded: false, bet: 0 },
                 { id: 1, name: '철수', isAI: true, style: 'tight', chips: INITIAL_CHIPS, cards: [], folded: false, bet: 0 },
@@ -206,10 +205,10 @@
 
             const getFlyVector = (playerId) => {
                 switch(playerId) {
-                    case 0: return { '--start-x': '0px', '--start-y': '160px' };
-                    case 1: return { '--start-x': '-140px', '--start-y': '0px' };
-                    case 2: return { '--start-x': '0px', '--start-y': '-160px' };
-                    case 3: return { '--start-x': '140px', '--start-y': '0px' };
+                    case 0: return { '--start-x': '0px', '--start-y': '140px' };
+                    case 1: return { '--start-x': '-110px', '--start-y': '0px' };
+                    case 2: return { '--start-x': '0px', '--start-y': '-140px' };
+                    case 3: return { '--start-x': '110px', '--start-y': '0px' };
                     default: return { '--start-x': '0px', '--start-y': '0px' };
                 }
             };
@@ -554,13 +553,13 @@
                 setPlayers([...currentPlayers]);
             }
 
-            function renderCard(card, index, scaleClass = "w-12 h-16 sm:w-14 sm:h-20 text-sm", isAiHiddenCard = false) {
-                if (!card) return <div className={`${scaleClass} bg-slate-800 rounded border border-slate-700`}></div>;
+            function renderCard(card, index, scaleClass = "w-10 h-14 sm:w-12 sm:h-16 text-xs", isAiHiddenCard = false) {
+                if (!card) return <div className={`${scaleClass} bg-slate-800 rounded border border-slate-700 shrink-0`}></div>;
 
                 if (isAiHiddenCard) {
                     return (
-                        <div className={`${scaleClass} animate-deal bg-blue-900 border-2 border-blue-600 rounded-xl shadow-md flex items-center justify-center relative shadow-indigo-900/50`}>
-                            <span className="text-[10px] text-blue-300 font-extrabold">HIDDEN</span>
+                        <div className={`${scaleClass} animate-deal bg-blue-900 border-2 border-blue-600 rounded-lg shadow-md flex items-center justify-center relative shadow-indigo-900/50 shrink-0`}>
+                            <span className="text-[9px] text-blue-300 font-extrabold">H</span>
                         </div>
                     );
                 }
@@ -569,53 +568,53 @@
                 const isDoor = card.type === 'door';
 
                 return (
-                    <div className={`${scaleClass} animate-deal bg-white border-2 ${isDoor ? 'border-purple-600' : 'border-slate-300'} rounded-xl shadow-md flex flex-col justify-between p-1.5 ${isRed ? 'text-red-600' : 'text-slate-900'} font-bold relative`}>
-                        {isDoor && <span className="absolute -top-2.5 -right-1 bg-purple-600 text-white text-[9px] px-1.5 py-0.5 rounded-full font-extrabold shadow">도어</span>}
+                    <div className={`${scaleClass} animate-deal bg-white border-2 ${isDoor ? 'border-purple-600' : 'border-slate-300'} rounded-lg shadow-md flex flex-col justify-between p-1 ${isRed ? 'text-red-600' : 'text-slate-900'} font-bold relative shrink-0`}>
+                        {isDoor && <span className="absolute -top-2 -right-1 bg-purple-600 text-white text-[8px] px-1 rounded-full font-extrabold shadow">도어</span>}
                         <div className="flex justify-between items-center leading-none">
-                            <span className="text-xs sm:text-sm">{card.value}</span>
-                            <span className="text-[10px]">{card.suit}</span>
+                            <span className="text-[10px] sm:text-xs">{card.value}</span>
+                            <span className="text-[8px] sm:text-[10px]">{card.suit}</span>
                         </div>
-                        <div className="text-center text-base sm:text-lg">{card.suit}</div>
+                        <div className="text-center text-xs sm:text-sm">{card.suit}</div>
                         <div className="flex justify-between items-center leading-none rotate-180">
-                            <span className="text-xs sm:text-sm">{card.value}</span>
-                            <span className="text-[10px]">{card.suit}</span>
+                            <span className="text-[10px] sm:text-xs">{card.value}</span>
+                            <span className="text-[8px] sm:text-[10px]">{card.suit}</span>
                         </div>
                     </div>
                 );
             }
 
             return (
-                <div className="flex flex-col min-h-screen bg-slate-950 text-white font-sans">
+                <div className="flex flex-col h-screen w-screen overflow-hidden bg-slate-950 text-white font-sans">
                     {/* 상단바 */}
-                    <header className="bg-slate-900 border-b border-slate-800 px-6 py-3 flex justify-between items-center shadow-md">
-                        <div className="flex items-center gap-3">
-                            <h1 className="text-base sm:text-lg font-black tracking-wider text-amber-400">♠ 포커게임</h1>
+                    <header className="bg-slate-900 border-b border-slate-800 px-4 py-2 flex justify-between items-center shadow-md shrink-0">
+                        <div className="flex items-center gap-2">
+                            <h1 className="text-xs sm:text-sm font-black tracking-wider text-amber-400 whitespace-nowrap">♠ 포커게임</h1>
                             <button 
                                 onClick={() => setShowTutorial(true)}
-                                className="bg-sky-600 hover:bg-sky-500 text-xs px-3 py-1 rounded-lg font-bold shadow transition-colors"
+                                className="bg-sky-600 hover:bg-sky-500 text-[11px] px-2.5 py-0.5 rounded font-bold shadow transition-colors"
                             >
                                 설명
                             </button>
                         </div>
-                        <div className="flex items-center space-x-3 text-sm">
+                        <div className="flex items-center space-x-2 text-xs">
                             <button 
                                 onClick={() => setHideChips(!hideChips)}
-                                className="bg-slate-800 hover:bg-slate-700 px-3 py-1 rounded-lg text-slate-300 text-xs font-semibold"
+                                className="bg-slate-800 hover:bg-slate-700 px-2 py-0.5 rounded text-slate-300 text-[11px] font-semibold whitespace-nowrap"
                             >
-                                {hideChips ? '🙈 칩 숨김' : '👁️ 칩 보기'}
+                                {hideChips ? '🙈 숨김' : '👁️ 보기'}
                             </button>
                             <button 
                                 onClick={() => setShowResetConfirm(true)}
-                                className="bg-rose-950/80 hover:bg-rose-900 px-3 py-1 rounded-lg text-rose-200 text-xs font-semibold"
+                                className="bg-rose-950/80 hover:bg-rose-900 px-2 py-0.5 rounded text-rose-200 text-[11px] font-semibold whitespace-nowrap"
                             >
                                 초기화
                             </button>
-                            <span className="bg-slate-800 px-3 py-1 rounded-lg text-sky-300 font-bold text-xs">{street}스트리트</span>
+                            <span className="bg-slate-800 px-2 py-0.5 rounded text-sky-300 font-bold text-[11px] whitespace-nowrap">{street}ST</span>
                         </div>
                     </header>
 
-                    {/* 메인 포커 테이블 레이아웃 */}
-                    <div className="flex-1 relative flex flex-col justify-between p-4 max-w-4xl mx-auto w-full my-auto">
+                    {/* 메인 포커 테이블 레이아웃 (세로 유연성 확보) */}
+                    <div className="flex-1 relative flex flex-col justify-between p-2 sm:p-4 max-w-2xl mx-auto w-full overflow-hidden">
                         
                         {flyingChips.map(fc => {
                             const styleVector = getFlyVector(fc.playerId);
@@ -623,7 +622,7 @@
                                 <div 
                                     key={fc.id} 
                                     style={styleVector}
-                                    className="absolute inset-0 m-auto w-7 h-7 rounded-full bg-red-600 border-2 border-dashed border-white flex items-center justify-center text-xs font-extrabold text-white shadow-2xl z-50 pointer-events-none animate-throw-chip"
+                                    className="absolute inset-0 m-auto w-6 h-6 rounded-full bg-red-600 border-2 border-dashed border-white flex items-center justify-center text-[10px] font-extrabold text-white shadow-2xl z-50 pointer-events-none animate-throw-chip"
                                 >
                                     $
                                 </div>
@@ -632,84 +631,84 @@
 
                         {/* 상단 봇 (영희) */}
                         {players[2] && (
-                            <div className={`flex flex-col items-center p-3 rounded-2xl border transition-all duration-300 ${currentTurn === 2 ? 'active-turn-effect bg-slate-900' : 'border-slate-800 bg-slate-900/60'} w-full max-w-lg mx-auto`}>
-                                <div className="flex justify-between w-full text-sm mb-2 px-2">
-                                    <span className="font-bold text-slate-200">{players[2].name} {players[2].folded && '(폴드)'}</span>
+                            <div className={`flex flex-col items-center p-2 rounded-xl border transition-all duration-300 ${currentTurn === 2 ? 'active-turn-effect bg-slate-900' : 'border-slate-800 bg-slate-900/60'} w-full max-w-sm mx-auto shrink-0`}>
+                                <div className="flex justify-between w-full text-xs mb-1 px-1">
+                                    <span className="font-bold text-slate-200 truncate">{players[2].name} {players[2].folded && '(폴드)'}</span>
                                     <ChipStack amount={players[2].chips} hide={hideChips} />
                                 </div>
-                                <div className="flex gap-2 w-full justify-center items-center my-1">
+                                <div className="flex gap-1.5 w-full justify-center items-center my-0.5 overflow-x-auto">
                                     {players[2].cards.map((c, i) => {
                                         let isAiHidden = (c.type === 'hidden' && !c.faceUp);
-                                        return <div key={i}>{renderCard(c, i, "w-10 h-14 sm:w-12 sm:h-16 text-xs", isAiHidden)}</div>;
+                                        return <div key={i}>{renderCard(c, i, "w-9 h-13 sm:w-11 sm:h-15 text-[11px]", isAiHidden)}</div>;
                                     })}
                                 </div>
-                                <div className="text-xs text-slate-400 mt-1">베팅: <strong className="text-amber-400">{players[2].bet}</strong></div>
+                                <div className="text-[11px] text-slate-400 mt-0.5">베팅: <strong className="text-amber-400">{players[2].bet}</strong></div>
                             </div>
                         )}
 
                         {/* 중단 테이블 (좌우 봇 및 중앙 팟) */}
-                        <div className="flex justify-between items-center w-full my-4 px-2">
+                        <div className="flex justify-between items-center w-full my-1 sm:my-2 px-1">
                             {/* 왼쪽 봇 (철수) */}
                             {players[1] && (
-                                <div className={`flex flex-col items-center p-2.5 rounded-2xl border transition-all duration-300 ${currentTurn === 1 ? 'active-turn-effect bg-slate-900' : 'border-slate-800 bg-slate-900/60'} w-[31%] max-w-[200px]`}>
-                                    <div className="text-xs font-bold text-slate-200 truncate w-full text-center mb-1">{players[1].name}</div>
-                                    <div className="my-1"><ChipStack amount={players[1].chips} hide={hideChips} /></div>
-                                    <div className="flex gap-1 bg-slate-950/50 p-1.5 rounded-xl border border-slate-800 flex-wrap justify-center min-h-[50px] items-center w-full">
+                                <div className={`flex flex-col items-center p-2 rounded-xl border transition-all duration-300 ${currentTurn === 1 ? 'active-turn-effect bg-slate-900' : 'border-slate-800 bg-slate-900/65'} w-[32%] max-w-[150px] shrink-0`}>
+                                    <div className="text-[11px] font-bold text-slate-200 truncate w-full text-center mb-0.5">{players[1].name}</div>
+                                    <div className="my-0.5"><ChipStack amount={players[1].chips} hide={hideChips} /></div>
+                                    <div className="flex gap-1 bg-slate-950/50 p-1 rounded-lg border border-slate-800 flex-wrap justify-center min-h-[45px] items-center w-full overflow-hidden">
                                         {players[1].cards.map((c, i) => {
                                             let isAiHidden = (c.type === 'hidden' && !c.faceUp);
-                                            return <div key={i}>{renderCard(c, i, "w-7 h-10 sm:w-9 sm:h-12 text-[10px]", isAiHidden)}</div>;
+                                            return <div key={i}>{renderCard(c, i, "w-6 h-9 sm:w-8 sm:h-11 text-[9px]", isAiHidden)}</div>;
                                         })}
                                     </div>
-                                    <div className="text-xs text-slate-400 mt-1.5">베팅: <strong className="text-amber-400">{players[1].bet}</strong></div>
+                                    <div className="text-[10px] text-slate-400 mt-1">베팅: <strong className="text-amber-400">{players[1].bet}</strong></div>
                                 </div>
                             )}
 
                             {/* 중앙 팟 */}
-                            <div className="flex flex-col items-center justify-center text-center px-2">
-                                <div className="bg-emerald-950/90 border-4 border-emerald-600/80 rounded-full w-36 h-36 sm:w-44 sm:h-44 shadow-2xl flex flex-col items-center justify-center p-3 relative overflow-hidden ring-4 ring-emerald-900/40">
-                                    <div className="absolute inset-2 border border-emerald-500/20 rounded-full pointer-events-none"></div>
-                                    <div className="text-xs font-black text-amber-300 tracking-wider mb-1">총 팟 (POT)</div>
-                                    <div className="text-lg sm:text-2xl font-black text-amber-400 drop-shadow-md mb-2 animate-chip">💰 {pot}</div>
-                                    <div className="bg-black/60 px-2.5 py-1 rounded-lg border border-emerald-500/30 max-w-[140px]">
-                                        <div className="text-[11px] text-emerald-200 font-medium truncate">{message}</div>
+                            <div className="flex flex-col items-center justify-center text-center px-1 shrink-0">
+                                <div className="bg-emerald-950/90 border-2 sm:border-4 border-emerald-600/80 rounded-full w-28 h-28 sm:w-36 sm:h-36 shadow-2xl flex flex-col items-center justify-center p-2 relative overflow-hidden ring-2 ring-emerald-900/40">
+                                    <div className="absolute inset-1 border border-emerald-500/20 rounded-full pointer-events-none"></div>
+                                    <div className="text-[10px] font-black text-amber-300 tracking-wider mb-0.5">총 팟 (POT)</div>
+                                    <div className="text-sm sm:text-xl font-black text-amber-400 drop-shadow-md mb-1 animate-chip">💰 {pot}</div>
+                                    <div className="bg-black/60 px-2 py-0.5 rounded border border-emerald-500/30 max-w-[110px]">
+                                        <div className="text-[10px] text-emerald-200 font-medium truncate">{message}</div>
                                     </div>
                                 </div>
                             </div>
 
                             {/* 오른쪽 봇 (수현) */}
                             {players[3] && (
-                                <div className={`flex flex-col items-center p-2.5 rounded-2xl border transition-all duration-300 ${currentTurn === 3 ? 'active-turn-effect bg-slate-900' : 'border-slate-800 bg-slate-900/60'} w-[31%] max-w-[200px]`}>
-                                    <div className="text-xs font-bold text-slate-200 truncate w-full text-center mb-1">{players[3].name}</div>
-                                    <div className="my-1"><ChipStack amount={players[3].chips} hide={hideChips} /></div>
-                                    <div className="flex gap-1 bg-slate-950/50 p-1.5 rounded-xl border border-slate-800 flex-wrap justify-center min-h-[50px] items-center w-full">
+                                <div className={`flex flex-col items-center p-2 rounded-xl border transition-all duration-300 ${currentTurn === 3 ? 'active-turn-effect bg-slate-900' : 'border-slate-800 bg-slate-900/65'} w-[32%] max-w-[150px] shrink-0`}>
+                                    <div className="text-[11px] font-bold text-slate-200 truncate w-full text-center mb-0.5">{players[3].name}</div>
+                                    <div className="my-0.5"><ChipStack amount={players[3].chips} hide={hideChips} /></div>
+                                    <div className="flex gap-1 bg-slate-950/50 p-1 rounded-lg border border-slate-800 flex-wrap justify-center min-h-[45px] items-center w-full overflow-hidden">
                                         {players[3].cards.map((c, i) => {
                                             let isAiHidden = (c.type === 'hidden' && !c.faceUp);
-                                            return <div key={i}>{renderCard(c, i, "w-7 h-10 sm:w-9 sm:h-12 text-[10px]", isAiHidden)}</div>;
+                                            return <div key={i}>{renderCard(c, i, "w-6 h-9 sm:w-8 sm:h-11 text-[9px]", isAiHidden)}</div>;
                                         })}
                                     </div>
-                                    <div className="text-xs text-slate-400 mt-1.5">베팅: <strong className="text-amber-400">{players[3].bet}</strong></div>
+                                    <div className="text-[10px] text-slate-400 mt-1">베팅: <strong className="text-amber-400">{players[3].bet}</strong></div>
                                 </div>
                             )}
                         </div>
 
                         {/* 내 좌석 (하단) */}
                         {players[0] && (
-                            <div className={`flex flex-col items-center p-3 rounded-2xl border transition-all duration-300 ${currentTurn === 0 ? 'active-turn-effect bg-slate-900' : 'border-slate-800 bg-slate-900/90'} w-full max-w-lg mx-auto`}>
-                                <div className="flex justify-between w-full text-sm mb-2 px-2">
-                                    <span className="font-bold text-amber-300">{players[0].name} {players[0].folded && '(폴드)'}</span>
+                            <div className={`flex flex-col items-center p-2.5 rounded-xl border transition-all duration-300 ${currentTurn === 0 ? 'active-turn-effect bg-slate-900' : 'border-slate-800 bg-slate-900/90'} w-full max-w-sm mx-auto shrink-0`}>
+                                <div className="flex justify-between w-full text-xs mb-1.5 px-1">
+                                    <span className="font-bold text-amber-300 truncate">{players[0].name} {players[0].folded && '(폴드)'}</span>
                                     <ChipStack amount={players[0].chips} hide={hideChips} />
                                 </div>
                                 
                                 {/* 내 카드 영역 */}
-                                <div className="flex gap-2.5 w-full justify-center min-h-[70px] items-center bg-slate-950/60 p-2 rounded-xl border border-slate-800">
+                                <div className="flex gap-2 w-full justify-center min-h-[60px] items-center bg-slate-950/60 p-1.5 rounded-lg border border-slate-800 overflow-x-auto">
                                     {players[0].cards.length > 0 ? (
-                                        players[0].cards.map((c, i) => <div key={i}>{renderCard(c, i, "w-12 h-16 sm:w-14 sm:h-20 text-sm", false)}</div>)
+                                        players[0].cards.map((c, i) => <div key={i}>{renderCard(c, i, "w-10 h-14 sm:w-12 sm:h-16 text-xs", false)}</div>)
                                     ) : (
-                                        <span className="text-sm text-slate-400">카드를 기다리는 중...</span>
+                                        <span className="text-xs text-slate-400">카드를 기다리는 중...</span>
                                     )}
                                 </div>
 
-                                <div className="flex justify-between w-full text-xs text-slate-300 mt-2 font-medium px-2">
+                                <div className="flex justify-between w-full text-[11px] text-slate-300 mt-1.5 font-medium px-1">
                                     <span>베팅액: <strong className="text-amber-400">{players[0].bet}</strong></span>
                                     <span>내 족보: <strong className="text-amber-300">{evaluateHand(players[0].cards).name}</strong></span>
                                 </div>
@@ -719,12 +718,12 @@
                     </div>
 
                     {/* 하단 컨트롤 패널 */}
-                    <div className="bg-slate-900 border-t border-slate-800 p-4">
-                        <div className="max-w-xl mx-auto flex flex-col items-center gap-3">
+                    <div className="bg-slate-900 border-t border-slate-800 p-3 shrink-0">
+                        <div className="max-w-md mx-auto flex flex-col items-center gap-2">
                             {gameState === 'LOBBY' && (
                                 <button 
                                     onClick={startNewHand}
-                                    className="w-full py-3.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl shadow-lg text-sm transition-colors"
+                                    className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl shadow-lg text-xs sm:text-sm transition-colors"
                                 >
                                     포커게임 시작하기
                                 </button>
@@ -732,17 +731,17 @@
 
                             {gameState === 'CHOOSE_DOOR' && (
                                 <div className="w-full text-center">
-                                    <p className="text-xs sm:text-sm text-amber-300 mb-2 font-bold">처음 받은 3장의 카드 중 공개할 도어카드를 선택하세요!</p>
-                                    <div className="flex justify-center gap-3">
+                                    <p className="text-[11px] sm:text-xs text-amber-300 mb-1.5 font-bold">처음 받은 3장의 카드 중 공개할 도어카드를 선택하세요!</p>
+                                    <div className="flex justify-center gap-2.5">
                                         {initDealCards.map((card, idx) => (
                                             <div 
                                                 key={idx} 
                                                 onClick={() => handleSelectDoor(idx)}
-                                                className="cursor-pointer bg-white border-2 border-purple-600 rounded-xl p-2 text-slate-900 hover:scale-105 transition-transform w-14 h-20 sm:w-16 sm:h-24 flex flex-col justify-between font-bold text-sm shadow-xl"
+                                                className="cursor-pointer bg-white border-2 border-purple-600 rounded-xl p-1.5 text-slate-900 hover:scale-105 transition-transform w-12 h-16 sm:w-14 sm:h-20 flex flex-col justify-between font-bold text-xs shadow-xl shrink-0"
                                             >
-                                                <div className="flex justify-between text-xs"><span>{card.value}</span><span>{card.suit}</span></div>
-                                                <div className="text-center text-lg">{card.suit}</div>
-                                                <div className="flex justify-between rotate-180 text-xs"><span>{card.value}</span><span>{card.suit}</span></div>
+                                                <div className="flex justify-between text-[10px]"><span>{card.value}</span><span>{card.suit}</span></div>
+                                                <div className="text-center text-sm">{card.suit}</div>
+                                                <div className="flex justify-between rotate-180 text-[10px]"><span>{card.value}</span><span>{card.suit}</span></div>
                                             </div>
                                         ))}
                                     </div>
@@ -750,38 +749,38 @@
                             )}
 
                             {gameState === 'PLAYING' && currentTurn === 0 && !players[0].folded && (
-                                <div className="grid grid-cols-5 gap-2 w-full">
+                                <div className="grid grid-cols-5 gap-1.5 w-full">
                                     <button 
                                         onClick={() => handleAction('fold')}
-                                        className="py-2.5 bg-rose-600 hover:bg-rose-500 font-bold rounded-xl text-xs sm:text-sm shadow transition-colors"
+                                        className="py-2 bg-rose-600 hover:bg-rose-500 font-bold rounded-lg text-[11px] sm:text-xs shadow transition-colors"
                                     >
                                         폴드
                                     </button>
                                     <button 
                                         onClick={() => handleAction('check')}
                                         disabled={currentBet > players[0].bet}
-                                        className="py-2.5 bg-slate-700 hover:bg-slate-600 disabled:opacity-40 font-bold rounded-xl text-xs sm:text-sm shadow transition-colors"
+                                        className="py-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-40 font-bold rounded-lg text-[11px] sm:text-xs shadow transition-colors"
                                     >
                                         체크
                                     </button>
                                     <button 
                                         onClick={() => handleAction('call')}
                                         disabled={currentBet <= players[0].bet}
-                                        className="py-2.5 bg-sky-600 hover:bg-sky-500 disabled:opacity-40 font-bold rounded-xl text-xs sm:text-sm shadow transition-colors truncate px-1"
+                                        className="py-2 bg-sky-600 hover:bg-sky-500 disabled:opacity-40 font-bold rounded-lg text-[10px] sm:text-xs shadow transition-colors truncate px-0.5"
                                     >
                                         콜 ({Math.max(0, currentBet - players[0].bet)})
                                     </button>
                                     <button 
                                         onClick={() => handleAction('bet')}
                                         disabled={currentBet > players[0].bet}
-                                        className="py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 font-bold rounded-xl text-xs sm:text-sm shadow transition-colors"
+                                        className="py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 font-bold rounded-lg text-[11px] sm:text-xs shadow transition-colors"
                                     >
                                         베팅
                                     </button>
                                     <button 
                                         onClick={() => handleAction('bet')}
                                         disabled={currentBet <= players[0].bet}
-                                        className="py-2.5 bg-teal-600 hover:bg-teal-500 disabled:opacity-40 font-bold rounded-xl text-xs sm:text-sm shadow transition-colors"
+                                        className="py-2 bg-teal-600 hover:bg-teal-500 disabled:opacity-40 font-bold rounded-lg text-[11px] sm:text-xs shadow transition-colors"
                                     >
                                         레이즈
                                     </button>
@@ -789,14 +788,14 @@
                             )}
 
                             {gameState === 'SHOWDOWN' && (
-                                <div className="w-full text-center flex flex-col gap-2">
-                                    <div className="bg-slate-800 p-2.5 rounded-xl border border-amber-500/50">
-                                        <h3 className="text-amber-400 font-bold text-xs">라운드 결과</h3>
-                                        <p className="text-xs mt-1">승자: <span className="text-white font-bold">{winnerInfo?.name}</span> ({winnerInfo?.handName})</p>
+                                <div className="w-full text-center flex flex-col gap-1.5">
+                                    <div className="bg-slate-800 p-2 rounded-lg border border-amber-500/50">
+                                        <h3 className="text-amber-400 font-bold text-[11px]">라운드 결과</h3>
+                                        <p className="text-[11px] mt-0.5">승자: <span className="text-white font-bold">{winnerInfo?.name}</span> ({winnerInfo?.handName})</p>
                                     </div>
                                     <button 
                                         onClick={startNewHand}
-                                        className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl shadow-lg text-sm transition-colors"
+                                        className="w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl shadow-lg text-xs transition-colors"
                                     >
                                         다음 판 진행하기
                                     </button>
@@ -804,21 +803,21 @@
                             )}
 
                             {gameState === 'GAMEOVER' && (
-                                <div className="w-full text-center flex flex-col gap-2.5">
-                                    <div className="bg-rose-950/60 p-3 rounded-xl border border-rose-500/50">
-                                        <h3 className="text-rose-400 font-black text-sm mb-1">파산하셨습니다!</h3>
-                                        <p className="text-xs text-slate-300">칩이 모두 소진되어 게임을 진행할 수 없습니다.</p>
+                                <div className="w-full text-center flex flex-col gap-2">
+                                    <div className="bg-rose-950/60 p-2 rounded-lg border border-rose-500/50">
+                                        <h3 className="text-rose-400 font-black text-xs mb-0.5">파산하셨습니다!</h3>
+                                        <p className="text-[10px] text-slate-300">칩이 모두 소진되었습니다.</p>
                                     </div>
                                     <div className="grid grid-cols-2 gap-2">
                                         <button 
                                             onClick={borrowChips}
-                                            className="py-3 bg-emerald-600 hover:bg-emerald-500 font-black rounded-xl shadow-lg text-xs sm:text-sm transition-colors"
+                                            className="py-2.5 bg-emerald-600 hover:bg-emerald-500 font-black rounded-xl shadow-lg text-xs transition-colors"
                                         >
                                             💵 칩 빌리기 (+100)
                                         </button>
                                         <button 
                                             onClick={() => setShowResetConfirm(true)}
-                                            className="py-3 bg-sky-600 hover:bg-sky-500 font-black rounded-xl shadow-lg text-xs sm:text-sm transition-colors"
+                                            className="py-2.5 bg-sky-600 hover:bg-sky-500 font-black rounded-xl shadow-lg text-xs transition-colors"
                                         >
                                             처음부터 리셋
                                         </button>
@@ -831,23 +830,23 @@
                     {/* 초기화 확인 팝업 모달 */}
                     {showResetConfirm && (
                         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-                            <div className="bg-slate-900 border border-slate-700 max-w-sm w-full p-6 rounded-3xl shadow-2xl flex flex-col text-center">
-                                <h2 className="text-base font-bold text-amber-400 mb-2">⚠️ 초기화 확인</h2>
-                                <p className="text-xs sm:text-sm text-slate-300 mb-5 leading-relaxed">
-                                    정말로 게임을 초기화하시겠습니까?<br />모든 칩과 기록이 리셋됩니다.
+                            <div className="bg-slate-900 border border-slate-700 max-w-xs w-full p-5 rounded-2xl shadow-2xl flex flex-col text-center">
+                                <h2 className="text-sm font-bold text-amber-400 mb-1.5">⚠️ 초기화 확인</h2>
+                                <p className="text-xs text-slate-300 mb-4 leading-relaxed">
+                                    게임을 초기화하시겠습니까?<br />모든 칩과 기록이 리셋됩니다.
                                 </p>
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-2 gap-2">
                                     <button 
                                         onClick={() => setShowResetConfirm(false)}
-                                        className="py-2.5 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-xl text-xs sm:text-sm"
+                                        className="py-2 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-xl text-xs"
                                     >
                                         취소
                                     </button>
                                     <button 
                                         onClick={resetGameData}
-                                        className="py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-black rounded-xl text-xs sm:text-sm"
+                                        className="py-2 bg-rose-600 hover:bg-rose-500 text-white font-black rounded-xl text-xs"
                                     >
-                                        초기화 하기
+                                        초기화
                                     </button>
                                 </div>
                             </div>
@@ -857,40 +856,38 @@
                     {/* 초보자 맞춤형 상세 게임 설명 가이드 팝업 */}
                     {showTutorial && (
                         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-                            <div className="bg-slate-900 border border-slate-700 max-w-lg w-full p-6 rounded-3xl shadow-2xl flex flex-col max-h-[85vh]">
-                                <h2 className="text-base font-bold text-amber-400 mb-3">📖 완전 초보를 위한 친절한 포커 가이드</h2>
-                                <div className="overflow-y-auto text-xs sm:text-sm text-slate-300 space-y-3.5 pr-2 flex-1 leading-relaxed text-left">
-                                    <div className="bg-slate-800/60 p-3 rounded-xl border border-slate-700">
-                                        <p className="font-bold text-amber-300 mb-1">1. 포커란 어떤 게임인가요?</p>
-                                        <p>• **철수, 영희, 수현이**와 함께 카드를 모아 가장 좋은 조합(족보)을 만드는 사람이 판돈(팟)을 모두 가져가는 게임입니다.</p>
-                                        <p>• 게임이 시작되면 카드를 단계별(3스트리트 ➔ 7스트리트)로 나누어 받으며, 단계마다 내 카드가 유리한지 판단해 돈을 겁니다.</p>
+                            <div className="bg-slate-900 border border-slate-700 max-w-md w-full p-5 rounded-2xl shadow-2xl flex flex-col max-h-[85vh]">
+                                <h2 className="text-sm font-bold text-amber-400 mb-2.5">📖 초보자용 포커 가이드</h2>
+                                <div className="overflow-y-auto text-xs text-slate-300 space-y-3 pr-1.5 flex-1 leading-relaxed text-left">
+                                    <div className="bg-slate-800/60 p-2.5 rounded-lg border border-slate-700">
+                                        <p className="font-bold text-amber-300 mb-0.5">1. 게임 소개</p>
+                                        <p>• **철수, 영희, 수현이**와 경쟁하여 가장 높은 족보를 만드는 사람이 팟(POT)을 가져갑니다.</p>
                                     </div>
                                     
-                                    <div className="bg-slate-800/60 p-3 rounded-xl border border-slate-700">
-                                        <p className="font-bold text-amber-300 mb-1">2. 게임 진행 순서 및 도어카드란?</p>
-                                        <p>• <strong>도어카드 선택:</strong> 게임이 시작되면 내게 카드 3장이 주어집니다. 이 중 다른 사람들에게 보여줄 공개 카드를 고르게 되는데, 이것이 바로 **보라색 테두리로 표시되는 '도어카드'**입니다.</p>
-                                        <p>• <strong>스트리트 단계:</strong> 카드를 한 장씩 더 받아 총 7장의 카드를 갖게 될 때까지 베팅 라운드(스트리트)가 차례대로 진행됩니다.</p>
+                                    <div className="bg-slate-800/60 p-2.5 rounded-lg border border-slate-700">
+                                        <p className="font-bold text-amber-300 mb-0.5">2. 도어카드와 진행</p>
+                                        <p>• 처음에 받은 3장 중 공개할 카드를 선택합니다. 이 카드가 바로 **보라색 테두리의 도어카드**입니다.</p>
                                     </div>
 
-                                    <div className="bg-slate-800/60 p-3 rounded-xl border border-slate-700">
-                                        <p className="font-bold text-amber-300 mb-1">3. 내 차례에 할 수 있는 행동 (버튼 설명)</p>
-                                        <p>• <strong>폴드:</strong> "이번 판은 내 카드가 너무 안 좋다" 싶을 때 포기하는 것입니다. 카드를 버리면 지금까지 낸 돈까지만 잃고 더 이상 피해를 보지 않습니다.</p>
-                                        <p>• <strong>체크:</strong> 추가로 돈을 낼 필요가 없을 때, 돈을 더 걸지 않고 다음 사람에게 순서를 넘깁니다.</p>
-                                        <p>• <strong>콜:</strong> 앞사람이 돈을 걸었을 때, 그 사람과 똑같은 금액을 맞춰서 내고 게임에 계속 참여합니다.</p>
-                                        <p>• <strong>베팅 / 레이즈:</strong> "내 카드가 아주 좋아!" 라며 판돈을 더 키우고 싶을 때 추가로 돈을 더 거는 행동입니다.</p>
+                                    <div className="bg-slate-800/60 p-2.5 rounded-lg border border-slate-700">
+                                        <p className="font-bold text-amber-300 mb-0.5">3. 버튼 설명</p>
+                                        <p>• **폴드:** 포기 (돈 추가 지출 없음)</p>
+                                        <p>• **체크:** 돈 추가 없이 순서 넘기기</p>
+                                        <p>• **콜:** 앞사람 베팅 금액에 맞추기</p>
+                                        <p>• **베팅/레이즈:** 판돈 키우기</p>
                                     </div>
 
-                                    <div className="bg-slate-800/60 p-3 rounded-xl border border-slate-700">
-                                        <p className="font-bold text-amber-300 mb-1">4. 초보자를 위한 화면 꿀팁</p>
-                                        <p>• 화면에서 누구 차례인지 헷갈린다면, <strong>테두리가 반짝반짝 빛나는 사람</strong>이 현재 차례인 사람입니다!</p>
-                                        <p>• 게임을 하다가 칩을 전부 잃어 파산하더라도, 언제든 <strong>[칩 빌리기]</strong> 버튼을 눌러 공짜로 칩을 충전하고 다시 즐길 수 있습니다.</p>
+                                    <div className="bg-slate-800/60 p-2.5 rounded-lg border border-slate-700">
+                                        <p className="font-bold text-amber-300 mb-0.5">4. 팁</p>
+                                        <p>• 테두리가 반짝이는 사람이 현재 차례입니다.</p>
+                                        <p>• 파산 시 **[칩 빌리기]**로 언제든 충전 가능합니다.</p>
                                     </div>
                                 </div>
                                 <button 
                                     onClick={() => setShowTutorial(false)}
-                                    className="mt-4 py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-sm"
+                                    className="mt-3 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs"
                                 >
-                                    완벽히 이해했어요!
+                                    확인 완료
                                 </button>
                             </div>
                         </div>

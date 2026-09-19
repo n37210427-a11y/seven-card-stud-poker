@@ -286,7 +286,7 @@
             }
 
             function startNewHand() {
-                // 게임 시작 전 모든 플레이어(나 + AI 포함) 중 칩이 0인 경우 자동으로 충전
+                // 게임 시작 전 철수, 영희, 수현 및 나를 포함해 칩이 0인 경우 자동으로 충전
                 const checkedPlayers = players.map(p => ({
                     ...p,
                     chips: p.chips <= 0 ? INITIAL_CHIPS : p.chips
@@ -896,7 +896,7 @@
                                     </div>
                                     <div>
                                         <h3 className="font-bold text-amber-300 mb-0.5">4. 팁과 주의사항</h3>
-                                        <p className="leading-relaxed text-slate-300">파산(칩 0개)하더라도 버튼을 눌러 칩을 무료로 충전하거나 게임을 처음부터 리셋할 수 있습니다!</p>
+                                        <p className="leading-relaxed text-slate-300">파산(칩 0개)하더라도 다음 판 시작 시 AI와 나 모두 칩이 자동으로 충전됩니다!</p>
                                     </div>
                                 </div>
                                 <button onClick={() => setShowTutorial(false)} className="mt-3 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-xs shadow">닫기</button>
